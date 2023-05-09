@@ -3,7 +3,7 @@ Player para arquivos M3U com VLC no Ubuntu 22.04
 
 Programa desenvolvido para ler um arquivo no formato M3U e listar o seu conteudo para ser reproduzido atraves do player VLC. Testado no Ubuntu 22.04. 
 
-Obs: Necessario ter o VLC instalado no sitema.
+Obs: Necessario ter o VLC instalado no sitema e instalar as bibliotecas inclusas no codigo para que o programa funcione.
 
 Principais funcionalidades:
 

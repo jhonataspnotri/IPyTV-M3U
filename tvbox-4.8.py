@@ -25,7 +25,7 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         self.treeview.setHeaderHidden(True)                
         self.search_edit = QtWidgets.QLineEdit()
         # Carregar imagend dos icones do player
-        button_icons = {"play":"python/sprite/control2.png", "pause":"python/sprite/control3.png", "stop":"python/sprite/control10.png", "anterior":"python/sprite/control5.png", "proximo":"python/sprite/control4.png", "forward":"python/sprite/control9.png", "backward":"python/sprite/control8.png"}
+        button_icons = {"play":"control2.png", "pause":"control3.png", "stop":"control10.png", "anterior":"control5.png", "proximo":"control4.png", "forward":"control9.png", "backward":"control8.png"}
         self.search_edit.setPlaceholderText("Pesquisar...")
         self.filter_edit = QtWidgets.QLineEdit()
         self.filter_edit.setPlaceholderText("Filtrar...")

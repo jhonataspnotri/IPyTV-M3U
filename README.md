@@ -10,12 +10,16 @@ Instalação
 Para instalar as dependências do programa, você pode usar o pip:
 
 Copy
+
 pip install python-vlc PyQt5
+
 Como usar
 Para executar o programa, execute o arquivo main.py:
 
 Copy
-python main.py
+
+python3 main.py
+
 O programa irá abrir uma janela com a lista de canais disponíveis. Selecione um canal e clique no botão "Play" para reproduzir o stream.
 
 Você também pode acessar as configurações do programa clicando no botão "Configurações". Lá, você pode configurar várias opções, como o diretório onde o arquivo M3U está localizado e a resolução do vídeo.

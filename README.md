@@ -6,6 +6,7 @@ Requisitos
 Python 3.6 ou superior
 Biblioteca VLC
 Biblioteca PyQt5
+Testado no Linux dist Ubuntu 22.04 Lts
 Instalação
 Para instalar as dependências do programa, você pode usar o pip:
 

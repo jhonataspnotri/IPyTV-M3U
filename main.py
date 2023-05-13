@@ -1,3 +1,6 @@
+# Autor: Jhonatas Moreira de Carvalho <jhonataspnotri@gmail.com>
+# Referência: Assistente de linguagem natural GPT-3.5 em 13 de maio de 2023
+
 import os
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets

@@ -1,45 +1,44 @@
-# M3U-PLAYER-IPTV-PYTHON
-M3U Player IPTV Python
-Este é um player de IPTV em Python que usa a biblioteca VLC para reproduzir streams de IPTV. Ele permite ao usuário selecionar canais de IPTV a partir de um arquivo M3U e reproduzi-los em uma janela de player de vídeo.
+#IPTVPlayer
+IPTVPlayer é um player de IPTV que permite carregar um arquivo M3U contendo uma lista de canais e reproduzir os canais selecionados. Ele é escrito em Python e usa a biblioteca PyQt5 para a interface gráfica e a biblioteca VLC para a reprodução de mídia.
 
-Requisitos
-Python 3.6 ou superior
-Biblioteca VLC
-Biblioteca PyQt5
-Testado no Linux dist Ubuntu 22.04 Lts
-Instalação
-Para instalar as dependências do programa, você pode usar o pip:
+Funcionalidades
+- Carrega uma lista de canais a partir de um arquivo M3U
+- Permite filtrar e pesquisar canais na lista
+- Reproduz o canal selecionado
+- Possui controles de reprodução (play, pause, stop, avançar, retroceder)
+- Permite ajustar o volume de áudio
+- Possui botões para selecionar o próximo ou o canal anterior na lista
+- Permite avançar ou retroceder a reprodução em 10 segundos
 
-Copy
+Como usar?
 
-pip install python-vlc PyQt5
+Para usar o IPTVPlayer, siga os seguintes passos:
 
-Como usar
-Para executar o programa, execute o arquivo main.py:
+Abra o arquivo main.py em um editor de texto ou ambiente de desenvolvimento Python.
+No terminal, navegue até o diretório onde o arquivo main.py está localizado.
+Execute o comando:
+python3 main.py 
+para iniciar o programa.
 
-Copy
+Clique no botão "Selecionar arquivo" para carregar o arquivo M3U contendo a lista de canais.
+Selecione um canal na lista e clique no botão "Play" para reproduzi-lo.
+Use os botões de controle de reprodução para pausar, parar, avançar ou retroceder a reprodução.
+Use o controle de volume para ajustar o nível de áudio.
 
-python3 main.py
+Requisitos:
+Testado e funcional no Ubuntu 22.04 Lts
+Python 3
+PyQt5
+VLC
 
-O programa irá abrir uma janela com a lista de canais disponíveis. Selecione um canal e clique no botão "Play" para reproduzir o stream.
+Contribuição:
+Contribuições são bem-vindas! Se você quiser contribuir com o IPTVPlayer, siga os seguintes passos:
 
-Você também pode acessar as configurações do programa clicando no botão "Configurações". Lá, você pode configurar várias opções, como o diretório onde o arquivo M3U está localizado e a resolução do vídeo.
-
-Estrutura do código
-main.py: ponto de entrada do programa, contém a lógica principal do player.
-ui: pasta contendo os arquivos de interface do usuário criados com a biblioteca PyQt5.
-vlc: pasta contendo os arquivos para interagir com a biblioteca VLC.
-O código usa o padrão de design Model-View-Controller (MVC) para separar as diferentes responsabilidades do código. A classe MainWindow é a "View", ou seja, a camada de apresentação do player. Ela é responsável por exibir a interface do usuário e responder às interações do usuário, como clicar em botões ou selecionar streams.
-
-A classe Controller é o "Controller", ou seja, a camada de controle do player. Ela é responsável por gerenciar os modelos de dados e controlar o fluxo de informações entre a interface do usuário e o modelo. Ela também gerencia a criação de instâncias da classe VLCPlayer e configura a reprodução de streams.
-
-A classe ChannelModel é o "Model", ou seja, a camada de modelo de dados. Ela é responsável por gerenciar a lista de canais disponíveis para reprodução e atualizar a interface do usuário quando a lista é alterada.
-
-Limitações
-O programa pode não funcionar corretamente em todos os sistemas, dependendo das versões das bibliotecas usadas e das configurações do ambiente em que é executado. Certifique-se de verificar se todas as dependências foram instaladas corretamente e se o código está atualizado antes de usá-lo em um ambiente de produção.
-
-Contribuindo
-Se você quiser contribuir para o projeto, fique à vontade para enviar pull requests ou abrir issues no GitHub. Qualquer ajuda é bem-vinda!
-
+Faça um fork do repositório.
+Crie um branch para a sua contribuição (git checkout -b minha-contribuicao).
+Faça as alterações necessárias.
+Faça o commit das alterações (git commit -am 'Adicionando minha contribuição').
+Faça o push do branch para o seu fork (git push origin minha-contribuicao).
+Abra um pull request no repositório original.
 Licença
-Este projeto está sob a licença MIT. Consulte o arquivo LICENSE para obter mais informações.
+Este código é distribuído sob a licença MIT. Veja o arquivo LICENSE para mais detalhes.

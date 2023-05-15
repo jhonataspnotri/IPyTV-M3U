@@ -20,7 +20,7 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         self.resize(800, 600)
         self.central_widget = QtWidgets.QWidget(self)
         self.setCentralWidget(self.central_widget)
-                
+
         # Criação dos widgets
         self.treeview = QtWidgets.QTreeView()        
         self.treeview.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
@@ -32,46 +32,60 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         self.search_edit.setPlaceholderText("Pesquisar...")
         self.filter_edit = QtWidgets.QLineEdit()
         self.filter_edit.setPlaceholderText("Filtrar...")
-        
+
         # Bt Play
         self.play_button = QtWidgets.QPushButton()
         play_icon = QtGui.QIcon(button_icons["play"])
-        self.play_button.setIcon(play_icon) 
-        
+        icon_size = play_icon.actualSize(QtCore.QSize(32, 32)) # define o tamanho do ícone como 32x32 pixels
+        self.play_button.setIconSize(icon_size)
+        self.play_button.setIcon(play_icon)
+
         # Bt stop       
         self.stop_button = QtWidgets.QPushButton()
         stop_icon = QtGui.QIcon(button_icons["stop"])
+        icon_size = stop_icon.actualSize(QtCore.QSize(32, 32)) # define o tamanho do ícone como 32x32 pixels
+        self.stop_button.setIconSize(icon_size)
         self.stop_button.setIcon(stop_icon)
-        
+
         # Bt Pause
         self.pause_button = QtWidgets.QPushButton()
         pause_icon = QtGui.QIcon(button_icons["pause"])
+        icon_size = pause_icon.actualSize(QtCore.QSize(32, 32)) # define o tamanho do ícone como 32x32 pixels
+        self.pause_button.setIconSize(icon_size)
         self.pause_button.setIcon(pause_icon)
-        
+
         # Bt Anterior        
         self.previous_button = QtWidgets.QPushButton()
         ant_icon = QtGui.QIcon(button_icons["anterior"])
-        self.previous_button.setIcon(ant_icon)        
-        
+        icon_size = ant_icon.actualSize(QtCore.QSize(32, 32)) # define o tamanho do ícone como 32x32 pixels
+        self.previous_button.setIconSize(icon_size)
+        self.previous_button.setIcon(ant_icon)
+
         # Bt Proximo
         self.next_button = QtWidgets.QPushButton()
         prox_icon = QtGui.QIcon(button_icons["proximo"])
-        self.next_button.setIcon(prox_icon)        
-        
+        icon_size = prox_icon.actualSize(QtCore.QSize(32, 32)) # define o tamanho do ícone como 32x32 pixels
+        self.next_button.setIconSize(icon_size)
+        self.next_button.setIcon(prox_icon)
+
         # Bt Avançar
         self.forward_button = QtWidgets.QPushButton()
         forward_icon = QtGui.QIcon(button_icons["forward"])
-        self.forward_button.setIcon(forward_icon)        
-        
+        icon_size = forward_icon.actualSize(QtCore.QSize(32, 32)) # define o tamanho do ícone como 32x32 pixels
+        self.forward_button.setIconSize(icon_size)
+        self.forward_button.setIcon(forward_icon)
+
         # Bt Retroceder
         self.backward_button = QtWidgets.QPushButton()
-        backward_icon = QtGui.QIcon(button_icons["backward"])        
+        backward_icon = QtGui.QIcon(button_icons["backward"]) 
+        icon_size = backward_icon.actualSize(QtCore.QSize(32, 32)) # define o tamanho do ícone como 32x32 pixels
+        self.backward_button.setIconSize(icon_size)
         self.backward_button.setIcon(backward_icon)
-                
+
         self.volume_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.volume_slider.setRange(0, 100)
         self.volume_slider.setValue(100)
-        
+
         # Criação do evento de teclas pressionadas
         self.treeview.keyPressEvent = self.play_on_return
 
@@ -124,10 +138,14 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         self.previous_button.clicked.connect(self.play_previous_channel)
         self.next_button.clicked.connect(self.play_next_channel)
         self.forward_button.clicked.connect(self.forward)
-        self.backward_button.clicked.connect(self.backward)        
+        self.backward_button.clicked.connect(self.backward)
+        # Configura o temporizador para verificar o fim do vídeo
+        self.timer = QtCore.QTimer(self)
+        self.timer.timeout.connect(self.check_media_end)
+        self.timer.start(1000)  # verifica a cada segundo        
 
     def select_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, 'Selecionar arquivo', './Vídeos', 'Arquivos M3U (*.m3u)')
+        file_path, _ = QFileDialog.getOpenFileName(self, 'Selecionar arquivo', os.path.expanduser("~/Vídeos"), 'Arquivos M3U (*.m3u)')
         if file_path:
             self.channels = self.load_channels_from_file(file_path)
             self.populate_channel_model()            
@@ -169,7 +187,7 @@ class IPTVPlayer(QtWidgets.QMainWindow):
 
     def pause_playback(self):
         self.media_player.pause()
-    
+
     def set_volume(self, value):
         self.media_player.audio_set_volume(value)
 
@@ -202,19 +220,36 @@ class IPTVPlayer(QtWidgets.QMainWindow):
     def play_on_return(self, event):
         if event.key() == QtCore.Qt.Key_Return:
             self.play_selected_channel()
-            
+        if event.key() == QtCore.Qt.Key_Down:
+            current_index = self.treeview.selectedIndexes()[0]
+            next_index = current_index.sibling(current_index.row() + 1, current_index.column())
+            if next_index.isValid():
+                self.treeview.selectionModel().select(next_index, QtCore.QItemSelectionModel.ClearAndSelect)
+        if event.key() == QtCore.Qt.Key_Up:
+            current_index = self.treeview.selectedIndexes()[0]
+            next_index = current_index.sibling(current_index.row() - 1, current_index.column())
+            if next_index.isValid():
+                self.treeview.selectionModel().select(next_index, QtCore.QItemSelectionModel.ClearAndSelect)
+
+
     def forward(self):
-        self.media_player.set_time(self.media_player.get_time() + 10000)
+        self.media_player.set_time(self.media_player.get_length() - 10000)
+        #self.media_player.set_time(self.media_player.get_time() + self.media_player.get_length() // 8)
 
     def backward(self):
-        self.media_player.set_time(self.media_player.get_time() - 10000)
-            
-    def QCloseEvent(self, event):
-    	if self.media_process is not None:
-        	self.media_process.kill()
-        	self.media_player.stop()
-    	event.accept()
+        self.media_player.set_time(self.media_player.get_time() - self.media_player.get_length() // 8)
 
+    def QCloseEvent(self, event):
+        if self.media_process is not None:
+            self.media_process.kill()
+            self.media_player.stop()
+        event.accept()
+
+    def check_media_end(self):
+        if self.media_player.get_state() == vlc.State.Ended:
+            self.play_next_channel()        
+        print(self.media_player.get_state())
+            
 if __name__ == "__main__":
     os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = "./platforms"
     app = QtWidgets.QApplication(sys.argv)

@@ -2,6 +2,7 @@
 # Referência: Assistente de linguagem natural GPT-3.5 em 13 de maio de 2023
 
 import os
+import time
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 from PyQt5.QtWidgets import QFileDialog
@@ -9,6 +10,7 @@ import vlc
 import tkinter as tk
 import requests
 from PIL import ImageTk, Image
+from PIL.ImageQt import ImageQt
 from io import BytesIO
 
 
@@ -17,7 +19,7 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         super(IPTVPlayer, self).__init__(parent)
         self.setWindowTitle("IPTV Player 4.8")
         self.setWindowIcon(QtGui.QIcon("logo-iptv.png"))
-        self.resize(800, 600)
+        self.resize(450, 400)
         self.central_widget = QtWidgets.QWidget(self)
         self.setCentralWidget(self.central_widget)
 
@@ -91,8 +93,7 @@ class IPTVPlayer(QtWidgets.QMainWindow):
 
         # Criação dos layouts
         self.search_layout = QtWidgets.QHBoxLayout()
-        self.search_layout.addWidget(self.search_edit)
-        self.search_layout.addWidget(self.filter_edit)
+        self.search_layout.addWidget(self.search_edit)        
         self.play_layout = QtWidgets.QHBoxLayout()
         self.play_layout.addWidget(self.play_button)
         self.play_layout.addWidget(self.stop_button)
@@ -102,10 +103,17 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         self.play_layout.addWidget(self.backward_button)
         self.play_layout.addWidget(self.forward_button)        
         self.volume_layout = QtWidgets.QHBoxLayout()
-        self.volume_layout.addWidget(self.volume_slider)
+        self.volume_layout.addWidget(self.volume_slider)        
         self.tree_layout = QtWidgets.QVBoxLayout()
         self.tree_layout.addLayout(self.search_layout)
-        self.tree_layout.addWidget(self.treeview)
+        self.tree_layout.addWidget(self.treeview)        
+        # Adicione o QLabel ao layout
+        self.logo_label = QtWidgets.QLabel()
+        #self.logo_label.setFixedSize(200, 100)
+        #self.tree_layout.addWidget(self.logo_label)
+        self.search_layout.addWidget(self.logo_label)
+        self.search_layout.addWidget(self.filter_edit)
+                       
         self.tree_layout.addLayout(self.play_layout)
         self.tree_layout.addLayout(self.volume_layout)
         self.central_widget.setLayout(self.tree_layout)
@@ -119,7 +127,7 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         self.instance = vlc.Instance("--no-xlib")
         self.media_player = self.instance.media_player_new()
 
-        # Criação da lista de canais vazia
+        # Criação da lista de canais vazia        
         self.channels = []        
         self.channel_model = QtGui.QStandardItemModel()
         self.treeview.setModel(self.channel_model)
@@ -148,18 +156,19 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         file_path, _ = QFileDialog.getOpenFileName(self, 'Selecionar arquivo', os.path.expanduser("~/Vídeos"), 'Arquivos M3U (*.m3u)')
         if file_path:
             self.channels = self.load_channels_from_file(file_path)
-            self.populate_channel_model()            
-
+            self.populate_channel_model()
+                
     def load_channels_from_file(self, file_path):
         channels = []
         with open(file_path, "r") as f:
             for line in f.readlines():
                 line = line.strip()
                 if line.startswith("#EXTINF:"):
-                    channel_name = line.split(",")[1]             
+                    channel_name = line.split("=")[2].rstrip(" tvg-logo").strip("\"")  
+                    channel_logo = line.split("=")[3].rstrip(" group-title").strip("\"")                    
                 elif line.startswith("http"):
-                    channel_url = line
-                    channels.append({"name": channel_name, "url": channel_url})
+                    channel_url = line                    
+                    channels.append({"name": channel_name, "url": channel_url, "logo": channel_logo})
         return channels
 
     def populate_channel_model(self):
@@ -167,11 +176,23 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         for channel in self.channels:
             item = QtGui.QStandardItem(channel["name"])
             item.setData(channel["url"], role=QtCore.Qt.UserRole)
+            item.setData(channel["logo"], role=QtCore.Qt.UserRole+1)
             self.channel_model.appendRow(item)
 
     def handle_treeview_selection(self):
         self.play_button.setEnabled(True)
         self.stop_button.setEnabled(True)
+        # mudar a imagem exibida conforme a linha selecionada
+        selected_items = self.treeview.selectedIndexes()
+        if selected_items:
+            selected_item = selected_items[0]
+            channel_url = selected_item.data(QtCore.Qt.UserRole)
+            channel_logo_url = selected_item.data(QtCore.Qt.UserRole + 1)            
+            response = requests.get(channel_logo_url)
+            img = Image.open(BytesIO(response.content))
+            img = img.resize((200, 100), Image.ANTIALIAS)
+            pixmap = QtGui.QPixmap.fromImage(ImageQt(img))            
+            self.logo_label.setPixmap(pixmap)        
 
     def play_selected_channel(self):
         selected_items = self.treeview.selectedIndexes()
@@ -179,8 +200,22 @@ class IPTVPlayer(QtWidgets.QMainWindow):
             selected_item = selected_items[0]
             channel_url = selected_item.data(QtCore.Qt.UserRole)
             media = self.instance.media_new(channel_url)
-            self.media_player.set_media(media)            
-            self.media_player.play()
+            self.media_player.set_media(media)
+            self.media_player.play()            
+            # Aguarda até que o vídeo comece a ser reproduzido ou ocorra um erro
+            while not vlc.State.Playing:
+                time.sleep(0.1)            
+            # Tenta reproduzir o vídeo até 3 vezes caso ocorra um erro
+                for i in range(3):
+                    try:
+                        self.media_player.play()
+                        break
+                    except Exception as e:
+                        print("Erro ao reproduzir vídeo:", e)
+                        print("Tentando novamente em 3 segundos...")
+                        time.sleep(3)
+                else:
+                    print("Não foi possível reproduzir o vídeo após 3 tentativas.")
 
     def stop_playback(self):
         self.media_player.stop()
@@ -233,8 +268,8 @@ class IPTVPlayer(QtWidgets.QMainWindow):
 
 
     def forward(self):
-        self.media_player.set_time(self.media_player.get_length() - 10000)
-        #self.media_player.set_time(self.media_player.get_time() + self.media_player.get_length() // 8)
+        #self.media_player.set_time(self.media_player.get_length() - 10000)
+        self.media_player.set_time(self.media_player.get_time() + self.media_player.get_length() // 8)
 
     def backward(self):
         self.media_player.set_time(self.media_player.get_time() - self.media_player.get_length() // 8)
@@ -246,7 +281,7 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         event.accept()
 
     def check_media_end(self):
-        if self.media_player.get_state() == vlc.State.Ended:
+        if self.media_player.get_state() == vlc.State.Ended and self.media_player.get_time() > 10000:
             self.play_next_channel()        
         print(self.media_player.get_state())
             

@@ -15,7 +15,7 @@ class IPTVPlayer(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(IPTVPlayer, self).__init__(parent)
         self.setWindowTitle("IPTV Player 4.8")
-        self.setWindowIcon(QtGui.QIcon("images/logo-iptv.png"))
+        self.setWindowIcon(QtGui.QIcon("images/polotno.png"))
         self.resize(800, 600)
         self.central_widget = QtWidgets.QWidget(self)
         self.setCentralWidget(self.central_widget)

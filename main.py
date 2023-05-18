@@ -1,6 +1,3 @@
-# Autor: Jhonatas Moreira de Carvalho <jhonataspnotri@gmail.com>
-# Referência: Assistente de linguagem natural GPT-3.5 em 13 de maio de 2023
-
 import os
 import time
 import sys
@@ -18,8 +15,8 @@ class IPTVPlayer(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(IPTVPlayer, self).__init__(parent)
         self.setWindowTitle("IPTV Player 4.8")
-        self.setWindowIcon(QtGui.QIcon("logo-iptv.png"))
-        self.resize(450, 400)
+        self.setWindowIcon(QtGui.QIcon("images/logo-iptv.png"))
+        self.resize(800, 600)
         self.central_widget = QtWidgets.QWidget(self)
         self.setCentralWidget(self.central_widget)
 
@@ -30,7 +27,13 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         self.treeview.setHeaderHidden(True)                
         self.search_edit = QtWidgets.QLineEdit()
         # Carregar imagend dos icones do player
-        button_icons = {"play":"control2.png", "pause":"control3.png", "stop":"control10.png", "anterior":"control5.png", "proximo":"control4.png", "forward":"control9.png", "backward":"control8.png"}
+        button_icons = {"play":"images/control2.png",
+                        "pause":"images/control3.png",
+                        "stop":"images/control10.png",
+                        "anterior":"images/control5.png",
+                        "proximo":"images/control4.png",
+                        "forward":"images/control9.png",
+                        "backward":"images/control8.png"}
         self.search_edit.setPlaceholderText("Pesquisar...")
         self.filter_edit = QtWidgets.QLineEdit()
         self.filter_edit.setPlaceholderText("Filtrar...")
@@ -83,10 +86,16 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         icon_size = backward_icon.actualSize(QtCore.QSize(32, 32)) # define o tamanho do ícone como 32x32 pixels
         self.backward_button.setIconSize(icon_size)
         self.backward_button.setIcon(backward_icon)
-
+        
+        # Volume slider
         self.volume_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.volume_slider.setRange(0, 100)
         self.volume_slider.setValue(100)
+        
+        # Tempo slider
+        self.tempo_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.tempo_slider.setRange(0, 100)
+              
 
         # Criação do evento de teclas pressionadas
         self.treeview.keyPressEvent = self.play_on_return
@@ -106,7 +115,8 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         self.volume_layout.addWidget(self.volume_slider)        
         self.tree_layout = QtWidgets.QVBoxLayout()
         self.tree_layout.addLayout(self.search_layout)
-        self.tree_layout.addWidget(self.treeview)        
+        self.tree_layout.addWidget(self.treeview)
+        self.tree_layout.addWidget(self.tempo_slider)
         # Adicione o QLabel ao layout
         self.logo_label = QtWidgets.QLabel()
         #self.logo_label.setFixedSize(200, 100)
@@ -142,7 +152,7 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         self.play_button.clicked.connect(self.play_selected_channel)
         self.stop_button.clicked.connect(self.stop_playback)
         self.pause_button.clicked.connect(self.pause_playback)
-        self.volume_slider.valueChanged.connect(self.set_volume)
+        self.volume_slider.valueChanged.connect(self.set_volume)        
         self.previous_button.clicked.connect(self.play_previous_channel)
         self.next_button.clicked.connect(self.play_next_channel)
         self.forward_button.clicked.connect(self.forward)
@@ -150,7 +160,10 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         # Configura o temporizador para verificar o fim do vídeo
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.check_media_end)
-        self.timer.start(1000)  # verifica a cada segundo        
+        self.timer.start(1000)  # verifica a cada segundo 
+        self.tempo_slider.sliderReleased.connect(self.set_tempo)
+        self.tempo_slider.sliderPressed.connect(self.slider_pressed)        
+        self.tempo_slider.sliderPressed = False        
 
     def select_file(self):
         file_path, _ = QFileDialog.getOpenFileName(self, 'Selecionar arquivo', os.path.expanduser("~/Vídeos"), 'Arquivos M3U (*.m3u)')
@@ -225,6 +238,14 @@ class IPTVPlayer(QtWidgets.QMainWindow):
 
     def set_volume(self, value):
         self.media_player.audio_set_volume(value)
+        
+    def set_tempo(self):
+        novoValue = self.tempo_slider.value() * 1000
+        self.media_player.set_time(novoValue) 
+        self.tempo_slider.sliderPressed = False
+    
+    def slider_pressed(self):
+        self.tempo_slider.sliderPressed = True        
 
     def filter_treeview(self, text):
         search_text = self.search_edit.text().lower()
@@ -282,8 +303,15 @@ class IPTVPlayer(QtWidgets.QMainWindow):
 
     def check_media_end(self):
         if self.media_player.get_state() == vlc.State.Ended and self.media_player.get_time() > 10000:
-            self.play_next_channel()        
-        print(self.media_player.get_state())
+            self.play_next_channel()
+        if self.media_player.get_state() == vlc.State.Playing:
+            if not self.tempo_slider.sliderPressed:
+                self.tempo_slider.setRange(0, self.media_player.get_length()//1000)    
+                self.tempo_slider.setValue(self.media_player.get_time()//1000)  
+        #DEBUG:    
+        #print(self.media_player.get_state())
+        #print(self.media_player.get_time()//1000)
+        #print(self.tempo_slider.sliderPressed)
             
 if __name__ == "__main__":
     os.environ["QT_QPA_PLATFORM_PLUGIN_PATH"] = "./platforms"

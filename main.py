@@ -19,7 +19,7 @@ class IPTVPlayer(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(IPTVPlayer, self).__init__(parent)
         self.setWindowTitle("IPTV Player 4.8")
-        self.setWindowIcon(QtGui.QIcon("/images/logo/logo-iptv.png"))
+        self.setWindowIcon(QtGui.QIcon("images/logo/logo-iptv.png"))
         self.resize(800, 600)
         self.central_widget = QtWidgets.QWidget(self)
         self.setCentralWidget(self.central_widget)
@@ -203,11 +203,14 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         #self.tempo_slider.sliderMoved.connect(self.slider_Moved)         
 
     def select_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, 'Selecionar arquivo', os.path.expanduser("~/Vídeos"), 'Arquivos M3U (*.m3u)')
-        if file_path:
-            self.channels = self.load_channels_from_file(file_path)
-            self.populate_channel_model()
-            self.filter_edit.addItems(self.itens) 
+        try:
+            file_path, _ = QFileDialog.getOpenFileName(self, 'Selecionar arquivo', os.path.expanduser("~/Vídeos"), 'Arquivos M3U (*.m3u)')
+            if file_path:
+                self.channels = self.load_channels_from_file(file_path)
+                self.populate_channel_model()
+                self.filter_edit.addItems(self.itens) 
+        except Exception as e:
+            print(e)
                 
     def load_channels_from_file(self, file_path):
         channels = []        
@@ -236,41 +239,44 @@ class IPTVPlayer(QtWidgets.QMainWindow):
             self.channel_model.appendRow(item)
 
     def handle_treeview_selection(self):
-        if not self.bt_visible:
-            self.play_button.setEnabled(True)
-            self.stop_button.setEnabled(True)
-            self.pause_button.setEnabled(True)
-            self.previous_button.setEnabled(True)
-            self.next_button.setEnabled(True)
-            self.forward_button.setEnabled(True)
-            self.backward_button.setEnabled(True)
-            self.ratio_button.setEnabled(True)
-            self.bt_visible = True
-        #print(self.bt_visible)    
-        
-        # mudar a imagem exibida conforme a linha selecionada
-        selected_items = self.treeview.selectedIndexes()
-        if selected_items:
-            selected_item = selected_items[0]
-            channel_url = selected_item.data(QtCore.Qt.UserRole)
-            channel_logo_url = selected_item.data(QtCore.Qt.UserRole + 1)            
-            response = requests.get(channel_logo_url)
-            # Carrega a imagem e redimensiona
-            img = Image.open(BytesIO(response.content)).convert("RGBA")
-            img = img.resize((300, 250), Image.ANTIALIAS)            
-            # Define uma máscara que seleciona apenas as áreas dentro da borda de 5 pixels
-            mask = Image.new('L', img.size, 255)
-            borda = 16
-            for x in range(img.size[0]):
-                for y in range(img.size[1]):
-                    if x < borda or x >= img.size[0]-borda or y < borda or y >= img.size[1]-borda:
-                        mask.putpixel((x, y), 0)                        
-            # Aplica a máscara na imagem
-            img = ImageOps.fit(img, mask.size, centering=(1.6, 1.6))
-            img.putalpha(mask)            
-            # Converte a imagem para um QPixmap e exibe no QLabel
-            pixmap = QtGui.QPixmap.fromImage(ImageQt(img))
-            self.logo_label.setPixmap(pixmap)      
+        try:
+            if not self.bt_visible:
+                self.play_button.setEnabled(True)
+                self.stop_button.setEnabled(True)
+                self.pause_button.setEnabled(True)
+                self.previous_button.setEnabled(True)
+                self.next_button.setEnabled(True)
+                self.forward_button.setEnabled(True)
+                self.backward_button.setEnabled(True)
+                self.ratio_button.setEnabled(True)
+                self.bt_visible = True
+            #print(self.bt_visible)    
+            
+            # mudar a imagem exibida conforme a linha selecionada
+            selected_items = self.treeview.selectedIndexes()
+            if selected_items:
+                selected_item = selected_items[0]
+                channel_url = selected_item.data(QtCore.Qt.UserRole)
+                channel_logo_url = selected_item.data(QtCore.Qt.UserRole + 1)            
+                response = requests.get(channel_logo_url)
+                # Carrega a imagem e redimensiona
+                img = Image.open(BytesIO(response.content)).convert("RGBA")
+                img = img.resize((300, 250), Image.Resampling.LANCZOS)            
+                # Define uma máscara que seleciona apenas as áreas dentro da borda de 5 pixels
+                mask = Image.new('L', img.size, 255)
+                borda = 16
+                for x in range(img.size[0]):
+                    for y in range(img.size[1]):
+                        if x < borda or x >= img.size[0]-borda or y < borda or y >= img.size[1]-borda:
+                            mask.putpixel((x, y), 0)                        
+                # Aplica a máscara na imagem
+                img = ImageOps.fit(img, mask.size, centering=(1.6, 1.6))
+                img.putalpha(mask)            
+                # Converte a imagem para um QPixmap e exibe no QLabel
+                pixmap = QtGui.QPixmap.fromImage(ImageQt(img))
+                self.logo_label.setPixmap(pixmap)
+        except Exception as e:
+            print(e)
 
     def play_selected_channel(self):
         selected_items = self.treeview.selectedIndexes()
@@ -483,3 +489,4 @@ if __name__ == "__main__":
     player = IPTVPlayer()
     player.show()
     sys.exit(app.exec_())
+

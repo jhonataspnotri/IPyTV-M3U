@@ -18,8 +18,8 @@ from io import BytesIO
 class IPTVPlayer(QtWidgets.QMainWindow):
     def __init__(self, parent=None):
         super(IPTVPlayer, self).__init__(parent)
-        self.setWindowTitle("IPTV Player 4.9")
-        self.setWindowIcon(QtGui.QIcon("images/logo/logo-iptv.png"))
+        self.setWindowTitle("IPTV Player 4.8")
+        self.setWindowIcon(QtGui.QIcon("/images/logo/logo-iptv.png"))
         self.resize(800, 600)
         self.central_widget = QtWidgets.QWidget(self)
         self.setCentralWidget(self.central_widget)
@@ -31,17 +31,24 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         self.treeview.setHeaderHidden(True)                
         self.search_edit = QtWidgets.QLineEdit()
         self.search_edit.setPlaceholderText("Pesquisar...")
-        self.filter_edit = QtWidgets.QLineEdit()
-        self.filter_edit.setPlaceholderText("Filtrar...")
+        self.filter_edit = QtWidgets.QComboBox()
+        root = tk.Tk()
+        self.filter_edit.setFixedWidth( (root.winfo_screenwidth() // 2 - 300) // 2)
+        #self.filter_edit.setPlaceholderText("Filtrar...")
+        self.itens = [""]
         
         # Carregar imagend dos icones do player
-        button_icons = {"play":"images/np4/control1.jpg",
-                        "pause":"images/np4/control2.jpg",
-                        "stop":"images/np4/control3.jpg",
-                        "anterior":"images/np4/control7.jpg",
-                        "proximo":"images/np4/control8.jpg",
-                        "forward":"images/np4/control6.jpg",
-                        "backward":"images/np4/control5.jpg"}
+        button_icons = {"play":"images/np4/control1.png",
+                        "pause":"images/np4/control17.png",
+                        "stop":"images/np4/control18.png",
+                        "anterior":"images/np4/control22.png",
+                        "proximo":"images/np4/control23.png",
+                        "backward":"images/np4/control20.png",
+                        "forward":"images/np4/control21.png",                        
+                        "ratio":"images/np4/control39.png",}
+        
+        # Var bt_visible = False
+        self.bt_visible = False
         
         # Bt Play
         self.play_button = QtWidgets.QPushButton()
@@ -97,7 +104,15 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         icon_size = backward_icon.actualSize(QtCore.QSize(32, 32)) # define o tamanho do ícone como 32x32 pixels
         self.backward_button.setIconSize(icon_size)
         self.backward_button.setIcon(backward_icon)
-        self.backward_button.setEnabled(False)               
+        self.backward_button.setEnabled(False)
+        
+        # Bt Aspect Ratio
+        self.ratio_button = QtWidgets.QPushButton()
+        ratio_icon = QtGui.QIcon(button_icons["ratio"])
+        icon_size = ratio_icon.actualSize(QtCore.QSize(32, 32)) # define o tamanho do ícone como 32x32 pixels
+        self.ratio_button.setIconSize(icon_size)
+        self.ratio_button.setIcon(ratio_icon)
+        self.ratio_button.setEnabled(False)         
         
         # Volume slider
         self.volume_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
@@ -119,7 +134,8 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         self.play_layout.addWidget(self.play_button)
         self.play_layout.addWidget(self.stop_button)
         self.play_layout.addWidget(self.next_button)        
-        self.play_layout.addWidget(self.forward_button)        
+        self.play_layout.addWidget(self.forward_button)
+        self.play_layout.addWidget(self.ratio_button)
         self.volume_layout = QtWidgets.QHBoxLayout()
         self.volume_layout.addWidget(self.volume_slider)        
         self.tree_layout = QtWidgets.QVBoxLayout()
@@ -147,6 +163,10 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         # Inicialização da biblioteca VLC
         self.instance = vlc.Instance("--no-xlib")
         self.media_player = self.instance.media_player_new()
+        self.media_player.set_fullscreen(True)
+        self.aspect_ratio = "16:9"  # Proporção de aspecto desejada (exemplo: 16:9)
+        self.media_player.video_set_aspect_ratio(self.aspect_ratio)
+        self.change = 0
 
         # Criação da lista de canais vazia        
         self.channels = []        
@@ -156,7 +176,8 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         # Conexão dos sinais        
         # Criação do evento de teclas pressionadas
         self.search_edit.returnPressed.connect(lambda: self.filter_treeview(self.search_edit.text()))
-        self.filter_edit.returnPressed.connect(lambda: self.filter_treeview(self.filter_edit.text()))        
+        self.filter_edit.activated[str].connect(lambda item: self.filter_treeview(item))
+        #self.filter_edit.returnPressed.connect(lambda: self.filter_treeview(self.filter_edit.text()))        
         self.treeview.keyPressEvent = self.keyPressEvent
         #keyboard.on_press(self.handle_key_press)        
         if self.treeview:
@@ -170,7 +191,8 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         self.previous_button.clicked.connect(self.play_previous_channel)
         self.next_button.clicked.connect(self.play_next_channel)
         self.forward_button.clicked.connect(self.forward)
-        self.backward_button.clicked.connect(self.backward)        
+        self.backward_button.clicked.connect(self.backward)
+        self.ratio_button.clicked.connect(self.change_ratio) 
         # Configura o temporizador para verificar o fim do vídeo
         self.timer = QtCore.QTimer(self)
         self.timer.timeout.connect(self.check_media_end)
@@ -185,21 +207,24 @@ class IPTVPlayer(QtWidgets.QMainWindow):
         if file_path:
             self.channels = self.load_channels_from_file(file_path)
             self.populate_channel_model()
+            self.filter_edit.addItems(self.itens) 
                 
     def load_channels_from_file(self, file_path):
-        channels = []
+        channels = []        
         with open(file_path, "r") as f:
             for line in f.readlines():
                 line = line.strip()
                 if line.startswith("#EXTINF:"):
                     channel_name = line.split("=")[2].rstrip(" tvg-logo").strip("\"")
                     channel_logo = line.split("=")[3].rstrip(" group-title").strip("\"")
-                    channel_group = line.rsplit("group-title=")[1]
-                    channel_group = channel_group.split(",")[0].strip("\"") 
+                    channel_group = line.rsplit("group-title=")[1]                                        
+                    channel_group = channel_group.split(",")[0].strip("\"")
+                    if not channel_group in self.itens:
+                        self.itens.append(channel_group)                    
                     #print(channel_group)
                 elif line.startswith("http"):
                     channel_url = line                    
-                    channels.append({"name": channel_group +": "+channel_name, "url": channel_url, "logo": channel_logo})
+                    channels.append({"name": channel_group +": "+channel_name, "url": channel_url, "logo": channel_logo})                   
         return channels        
 
     def populate_channel_model(self):
@@ -211,13 +236,18 @@ class IPTVPlayer(QtWidgets.QMainWindow):
             self.channel_model.appendRow(item)
 
     def handle_treeview_selection(self):
-        self.play_button.setEnabled(True)
-        self.stop_button.setEnabled(True)
-        self.pause_button.setEnabled(True)
-        self.previous_button.setEnabled(True)
-        self.next_button.setEnabled(True)
-        self.forward_button.setEnabled(True)
-        self.backward_button.setEnabled(True)        
+        if not self.bt_visible:
+            self.play_button.setEnabled(True)
+            self.stop_button.setEnabled(True)
+            self.pause_button.setEnabled(True)
+            self.previous_button.setEnabled(True)
+            self.next_button.setEnabled(True)
+            self.forward_button.setEnabled(True)
+            self.backward_button.setEnabled(True)
+            self.ratio_button.setEnabled(True)
+            self.bt_visible = True
+        #print(self.bt_visible)    
+        
         # mudar a imagem exibida conforme a linha selecionada
         selected_items = self.treeview.selectedIndexes()
         if selected_items:
@@ -265,6 +295,25 @@ class IPTVPlayer(QtWidgets.QMainWindow):
                 else:
                     print("Não foi possível reproduzir o vídeo após 3 tentativas.")
 
+    def change_ratio(self):        
+        if self.change == 0:  # muda para 4:3
+            self.aspect_ratio = "4:3"
+            self.media_player.video_set_aspect_ratio(self.aspect_ratio)
+            self.change += 1
+        elif self.change == 1:  # muda para 1:1
+            self.aspect_ratio = "1:1"
+            self.media_player.video_set_aspect_ratio(self.aspect_ratio)
+            self.change += 1
+        elif self.change == 2:  # muda para 16:9
+            self.aspect_ratio = "16:9"
+            self.media_player.video_set_aspect_ratio(self.aspect_ratio)
+            self.change += 1 
+        elif self.change == 3:  # muda para 16:10
+            self.aspect_ratio = "16:10"
+            self.media_player.video_set_aspect_ratio(self.aspect_ratio)
+            self.change = 0        
+        print(self.aspect_ratio)
+    
     def stop_playback(self):
         self.media_player.stop()
 
@@ -288,7 +337,8 @@ class IPTVPlayer(QtWidgets.QMainWindow):
 
     def filter_treeview(self, text):
         search_text = self.search_edit.text().lower()
-        filter_text = self.filter_edit.text().lower()
+        #filter_text = self.filter_edit.text().lower()
+        filter_text = self.filter_edit.currentText().lower()
         for i in range(self.channel_model.rowCount()):
             item = self.channel_model.item(i)
             channel_name = item.text().lower()

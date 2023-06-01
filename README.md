@@ -11,14 +11,19 @@ Funcionalidades
 - Permite avançar ou retroceder a reprodução em 10 segundos
 
 Como usar?
+instale usando os comandos no terminal
+
+git clone https://github.com/jhonataspnotri/IPyTV-M3U.git
+
+após isso acesse a pasta com:
+
+cd IPyTV-M3U
 
 Para usar o IPTVPlayer, siga os seguintes passos:
 
-Abra o arquivo main.py em um editor de texto ou ambiente de desenvolvimento Python.
-No terminal, navegue até o diretório onde o arquivo main.py está localizado.
-Execute o comando:
+Execute o comando a seguir para iniciar o programa.:
+
 python3 main.py 
-para iniciar o programa.
 
 Clique no botão "Selecionar arquivo" para carregar o arquivo M3U contendo a lista de canais.
 Selecione um canal na lista e clique no botão "Play" para reproduzi-lo.
